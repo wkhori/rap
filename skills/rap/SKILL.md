@@ -42,16 +42,16 @@ Decide three things and state them in chat in ≤3 lines before continuing:
 **Agent & model fit** — spawn with the `Agent` tool. Route by what the role actually
 demands, not by how important the project feels.
 
-| Role | `subagent_type` | `model` | Why this tier |
-|---|---|---|---|
-| Researcher (fetch, read, cite, summarize) | `general-purpose` | `sonnet` | I/O-bound work — fetch a page, quote it, rate confidence. Reasoning strength buys almost nothing here; volume and cost do |
-| Verifier (refute one claim) | `general-purpose` | `sonnet` | One narrow question with a yes/no answer |
-| Challenger — Standard | `general-purpose` | `opus` | Adversarial reasoning over a bounded plan |
-| Challenger — Deep, gap pass | `general-purpose` | `fable` | The one role where the strongest model pays for itself: long-horizon reasoning across a whole architecture, where a missed structural flaw costs more than the run |
+Every spawn is `subagent_type: general-purpose` — researchers need Bash to append to
+`research.md`, which read-only agents can't do. Pass `model` explicitly on all of them;
+`Agent` has no reasoning-effort parameter (only the `Workflow` runner's `agent()` does).
 
-`Agent` takes `model`, not a reasoning-effort parameter — effort comes from the agent
-definition. Only the `Workflow` runner's `agent(prompt, {effort})` accepts one, which is why
-`references/deep-workflow.md` sets it and this table doesn't.
+| Role | `model` | Why this tier |
+|---|---|---|
+| Researcher (fetch, read, cite, summarize) | `sonnet` | I/O-bound work — fetch a page, quote it, rate confidence. Reasoning strength buys almost nothing here; volume and cost do |
+| Verifier (refute one claim) | `sonnet` | One narrow question with a yes/no answer |
+| Challenger — Standard | `opus` | Adversarial reasoning over a bounded plan |
+| Challenger — Deep, gap pass | `fable` | The one role where the strongest model pays for itself: long-horizon reasoning across a whole architecture, where a missed structural flaw costs more than the run |
 
 **Cost discipline.** Sonnet 5 is $2/$10 per Mtok, Opus 5 $5/$25, Fable 5 $10/$50 — Fable is
 5× Sonnet in and out. Spend it on judgment, never on retrieval. Concretely:
@@ -65,7 +65,7 @@ definition. Only the `Workflow` runner's `agent(prompt, {effort})` accepts one, 
   puts researchers on whatever the lead happens to be using.
 - Prices as of Aug 2026 — re-check before trusting them.
 
-Parallel researchers need Bash to append to `research.md`, so `general-purpose` — not `Explore`, which cannot write. (Quick tier's lone `Explore` agent is the exception: it returns findings and the lead writes `research.md` itself.) Send parallel agents as multiple `Agent` calls in **one** message or they run sequentially. `WebSearch`/`WebFetch` may be deferred; load them once with `ToolSearch("select:WebSearch,WebFetch")` before researching, and tell every researcher to do the same.
+(Quick tier's lone `Explore` agent is the exception: it's read-only, so it returns findings and the lead writes `research.md` itself.) Send parallel agents as multiple `Agent` calls in **one** message or they run sequentially. `WebSearch`/`WebFetch` may be deferred; load them once with `ToolSearch("select:WebSearch,WebFetch")` before researching, and tell every researcher to do the same.
 
 **Run directory** — check first whether a run directory for this same work already exists; if it does, do not create a second one — switch to `revision` mode over its `plan.md`. Otherwise create it now: match repo convention, default `docs/plans/YYYY-MM-DD-<slug>/`. Greenfield: create the project folder first and put the run dir inside it; never write into a non-project cwd (e.g. a Desktop). Files: `plan.md` (always), `research.md` (create with a title line only — each researcher's heredoc opens with its own `## <angle>` heading, since `>>` can only append at end-of-file), `brief.md` when the brief came as a file or a long paste; if the brief is a large document, `brief.md` holds a one-line pointer to the original rather than a copy.
 
