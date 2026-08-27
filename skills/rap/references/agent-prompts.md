@@ -1,19 +1,21 @@
 # Agent prompts & checklists
 
-Every prompt below is pasted into a fresh `Agent` call. Always include: the brief verbatim, mode/size/tier, locked decisions so far, the run directory path (`<run dir>/research.md` is the notes file — the lead created it with one `## <angle>` heading per researcher), and "No preamble. No questions back. Return only what's asked."
+Every prompt below is pasted into a fresh `Agent` call. Always include: the brief verbatim, mode/size/tier, locked decisions so far, the run directory path (`<run dir>/research.md` is the notes file — the lead created it with a title line only; each researcher writes its own `## <angle>` heading), and "No preamble. No questions back. Return only what's asked."
 
 Spawn with `subagent_type: general-purpose` — researchers need Bash to append to `research.md`, which `Explore` cannot do. Send parallel researchers as multiple `Agent` calls in one message.
 
 Model routing (see SKILL.md for the cost rationale):
 
-| Role | `model` | `effort` |
-|---|---|---|
-| Researcher | `sonnet` | `medium` (`low` for a one-question angle) |
-| Verifier | `sonnet` | `low` |
-| Challenger — Standard | `opus` | `high` |
-| Challenger — Deep, gap pass | `fable` | `xhigh` |
+| Role | `model` |
+|---|---|
+| Researcher | `sonnet` |
+| Verifier | `sonnet` |
+| Challenger — Standard | `opus` |
+| Challenger — Deep, gap pass | `fable` |
 
-Never step researchers up a tier for a high-stakes brief — step the Challenger up instead.
+Always pass `model` explicitly. `Agent` has no reasoning-effort parameter — only the
+`Workflow` runner's `agent(prompt, {effort})` does. Never step researchers up a tier for a
+high-stakes brief — step the Challenger up instead.
 
 ## researcher
 
@@ -36,8 +38,12 @@ Rules
 - Do not recommend architecture; report facts. Flag anything that contradicts the brief.
 - Budget: ≤20 tool calls, then return what you have.
 
-Write findings under your heading `## <angle>` in `<run dir>/research.md` by APPENDING with one Bash heredoc:
-  cat >> <run dir>/research.md <<'EOF' … EOF
+Write findings to `<run dir>/research.md` by APPENDING with one Bash heredoc whose first
+line is your own `## <angle>` heading:
+  cat >> <run dir>/research.md <<'EOF'
+
+## <angle>
+… EOF
 Never Read-then-Write that file — other researchers write to it concurrently. Format per finding: **Finding** · Source · Key numbers · Gotcha · Confidence.
 Return a ≤300-word summary: the 3–6 facts most likely to change a decision, and any contradiction with the brief.
 ```
@@ -81,7 +87,7 @@ Paste at the end of `plan.md`, filled in:
 ## Handoff prompt
 
 You are the orchestrator implementing `<run dir>/plan.md`. Read it fully, then `<run dir>/research.md` for sources (and `brief.md` if present).
-Start with "Setup & commands": install, env var names, and confirm test/lint/build run. Work on branch `<slug>` (git init if greenfield).
+Start with "Setup & commands": install, env var names, and confirm test/lint/build run. Work on branch `<slug>` (git init if the directory is not already a repo).
 Execute phases in order; a phase is done only when its Acceptance passes and its named tests are green. Commit per phase with the phase name.
 Decisions are LOCKED — do not relitigate. If a lock proves impossible, write the conflict into plan.md under "## Blocks" and stop.
 Assumptions tagged "(assumed — not in brief)" may be revised only if the code proves them wrong; note the change in plan.md.

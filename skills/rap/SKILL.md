@@ -28,6 +28,7 @@ Decide three things and state them in chat in ≤3 lines before continuing:
   - **M** a handful of files in one subsystem; ≤1 new concept; ≤1 new dep
   - **L** crosses 2+ subsystems, or new dep + a schema/API/IPC boundary
   - **XL** new service, protocol, or architecture; breaking changes; multi-surface greenfield product
+  - Greenfield has no existing files to count, so size it by surfaces instead: **S** one file or script · **M** one service with one storage concern · **L** persistence + API + UI · **XL** multi-surface product
 - **Tier** — S/M → **Quick**, L → **Standard**, XL → **Deep**. Step up one tier if the brief carries a rubric/eval criteria, regulated or PII data, or the user asked for depth; step down if they asked for speed. Re-tier upward at most once mid-run, and say so. Never silently step down.
 
 | | Quick | Standard | Deep |
@@ -41,13 +42,16 @@ Decide three things and state them in chat in ≤3 lines before continuing:
 **Agent & model fit** — spawn with the `Agent` tool. Route by what the role actually
 demands, not by how important the project feels.
 
-| Role | `subagent_type` | `model` | `effort` | Why this tier |
-|---|---|---|---|---|
-| Lead (you) | — | session model | — | inherit whatever the user chose |
-| Researcher (fetch, read, cite, summarize) | `general-purpose` | `sonnet` | `medium` | I/O-bound work — fetch a page, quote it, rate confidence. Reasoning strength buys almost nothing; volume and cost do. Drop to `low` for a single-question angle |
-| Verifier (refute one claim) | `general-purpose` | `sonnet` | `low` | One narrow question with a yes/no answer |
-| Challenger — Standard | `general-purpose` | `opus` | `high` | Adversarial reasoning over a bounded plan |
-| Challenger — Deep, gap pass | `general-purpose` | `fable` | `xhigh` | The one role where the strongest model pays for itself: long-horizon reasoning across a whole architecture, where a missed structural flaw costs more than the run |
+| Role | `subagent_type` | `model` | Why this tier |
+|---|---|---|---|
+| Researcher (fetch, read, cite, summarize) | `general-purpose` | `sonnet` | I/O-bound work — fetch a page, quote it, rate confidence. Reasoning strength buys almost nothing here; volume and cost do |
+| Verifier (refute one claim) | `general-purpose` | `sonnet` | One narrow question with a yes/no answer |
+| Challenger — Standard | `general-purpose` | `opus` | Adversarial reasoning over a bounded plan |
+| Challenger — Deep, gap pass | `general-purpose` | `fable` | The one role where the strongest model pays for itself: long-horizon reasoning across a whole architecture, where a missed structural flaw costs more than the run |
+
+`Agent` takes `model`, not a reasoning-effort parameter — effort comes from the agent
+definition. Only the `Workflow` runner's `agent(prompt, {effort})` accepts one, which is why
+`references/deep-workflow.md` sets it and this table doesn't.
 
 **Cost discipline.** Sonnet 5 is $2/$10 per Mtok, Opus 5 $5/$25, Fable 5 $10/$50 — Fable is
 5× Sonnet in and out. Spend it on judgment, never on retrieval. Concretely:
@@ -56,14 +60,14 @@ demands, not by how important the project feels.
   **Challenger** up instead — that is where model strength converts into caught mistakes.
 - A Quick run should not reach for `opus` or `fable` at all; if it feels like it needs to,
   you mis-tiered — re-tier and say so.
-- `xhigh` is the sweet spot for hard agentic reasoning; reserve `max` for a Deep run whose
-  brief carries a rubric or regulated data. Use `low` freely for mechanical subagents.
-- Omit `model` whenever the session model is already right for the role — an explicit
-  downgrade of the lead is never this skill's call.
+- **Always pass `model` explicitly on every spawn**, even when it matches the session model.
+  Inheriting by omission is routing by accident: it makes a run unauditable, and it silently
+  puts researchers on whatever the lead happens to be using.
+- Prices as of Aug 2026 — re-check before trusting them.
 
-Researchers need Bash to append to `research.md`, so `general-purpose` — not `Explore`, which cannot write. Send parallel agents as multiple `Agent` calls in **one** message or they run sequentially. `WebSearch`/`WebFetch` may be deferred; load them once with `ToolSearch("select:WebSearch,WebFetch")` before researching, and tell every researcher to do the same.
+Parallel researchers need Bash to append to `research.md`, so `general-purpose` — not `Explore`, which cannot write. (Quick tier's lone `Explore` agent is the exception: it returns findings and the lead writes `research.md` itself.) Send parallel agents as multiple `Agent` calls in **one** message or they run sequentially. `WebSearch`/`WebFetch` may be deferred; load them once with `ToolSearch("select:WebSearch,WebFetch")` before researching, and tell every researcher to do the same.
 
-**Run directory** — create it now: match repo convention, default `docs/plans/YYYY-MM-DD-<slug>/`. Greenfield: create the project folder first and put the run dir inside it; never write into a non-project cwd (e.g. a Desktop). Files: `plan.md` (always), `research.md` (skeleton now, one `## <angle>` heading per researcher), `brief.md` when the brief came as a file or long paste.
+**Run directory** — check first whether a run directory for this same work already exists; if it does, do not create a second one — switch to `revision` mode over its `plan.md`. Otherwise create it now: match repo convention, default `docs/plans/YYYY-MM-DD-<slug>/`. Greenfield: create the project folder first and put the run dir inside it; never write into a non-project cwd (e.g. a Desktop). Files: `plan.md` (always), `research.md` (create with a title line only — each researcher's heredoc opens with its own `## <angle>` heading, since `>>` can only append at end-of-file), `brief.md` when the brief came as a file or a long paste; if the brief is a large document, `brief.md` holds a one-line pointer to the original rather than a copy.
 
 ## 2. Research
 
@@ -108,7 +112,7 @@ Write `plan.md` from `references/plan-template.md` — at minimum Summary, Decis
 ## 5. Challenge
 
 - **Quick** — self-pass written into `plan.md` as `## Challenge`: 3 lines of `assumption → failure scenario → fix applied`. A Quick plan without this section is incomplete.
-- **Standard / Deep** — spawn one Challenger (`references/agent-prompts.md#challenger`) pointed at the run dir — `model: opus`, `effort: high` at Standard; `model: fable`, `effort: xhigh` at Deep. It answers `HOLDS` or `BLOCKER: … → FIX`. Apply fixes to `plan.md`; reconcile conflicts in favor of sourced data over opinion.
+- **Standard / Deep** — spawn one Challenger (`references/agent-prompts.md#challenger`) pointed at the run dir — `model: opus` at Standard, `model: fable` at Deep. It answers `HOLDS` or `BLOCKER: … → FIX`. Apply fixes to `plan.md`; reconcile conflicts in favor of sourced data over opinion.
 - **Deep** — add the gap pass (`#gap-pass`): trace every requirement to a phase and a named test; patch the plan, don't report holes.
 
 ## 6. Finalize & deliver

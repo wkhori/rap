@@ -62,6 +62,21 @@ A grader whose `tool` is `Skill` is treated as a *plugin-fired indicator* rather
 scored criterion — it can't pass in the baseline arm by construction, so scoring it would
 make every delta look artificially good.
 
+## Not yet covered
+
+Ranked by how likely each is to catch a real regression:
+
+1. **Does the plan actually execute?** The core promise — a fresh session runs it from the
+   handoff prompt without asking anything — is untested. Needs a two-stage case that feeds
+   the produced handoff prompt to a second headless run and checks the tests go green.
+2. **Revision mode** — a whole untested mode: the Drift table, `KEPT` rows, and the rule
+   against rewriting the original design doc.
+3. **Deep tier** — nothing forces `--deep`, so `fable` routing, the gap pass, the 10-agent
+   cap, and the `Q + 2·H + 1 ≤ 8` budget rule have never executed.
+4. **The never-ask-a-fact rule** — the skill's core differentiator. Every case runs
+   autonomous, so the fact/preference split is unexercised.
+5. **Brief-as-a-file** (`/rap docs/brief.md`) and re-tiering on a rubric.
+
 ## Known gaps
 
 - **The one-question-round rule isn't directly tested.** Every case tells the skill to work

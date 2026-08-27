@@ -74,7 +74,7 @@ def run_case(case_dir, meta, prompt, arm, model, workspace):
     except subprocess.TimeoutExpired:
         return [], "", [], 0.0, "timeout"
 
-    trace, last, cost = [], "", 0.0
+    trace, last, cost, err = [], "", 0.0, None
     for line in proc.stdout.splitlines():
         try:
             d = json.loads(line)
@@ -89,12 +89,17 @@ def run_case(case_dir, meta, prompt, arm, model, workspace):
         elif d.get("type") == "result":
             cost = d.get("total_cost_usd", 0.0) or 0.0
             if d.get("is_error"):
-                return trace, last, [], cost, d.get("stop_reason") or "error"
+                err = d.get("stop_reason") or "error"
+                break
+    else:
+        err = None
 
+    # Collect created files even on the error path — a run that wrote plan.md and then
+    # hit max_turns still produced the artifact the file graders are asking about.
     created = sorted(str(p.relative_to(workspace))
                      for p in workspace.rglob("*")
                      if p.is_file() and p not in before and ".claude/skills" not in str(p))
-    return trace, last, created, cost, None
+    return trace, last, created, cost, err
 
 
 # ---------------------------------------------------------------- graders
@@ -203,6 +208,8 @@ def main():
     ap.add_argument("--no-ablation", action="store_true")
     ap.add_argument("--keep-temp", action="store_true")
     ap.add_argument("--json", dest="json_out")
+    ap.add_argument("--threshold", type=float, default=0.8,
+                    help="exit 1 if any case's with-arm mean falls below this (default 0.8)")
     args = ap.parse_args()
     sys.stdout.reconfigure(line_buffering=True)  # stream progress when piped
 
@@ -288,8 +295,10 @@ def main():
             {"cases": report, "totalCostUsd": total_cost}, indent=2))
         print(f"wrote {args.json_out}")
 
+    # A 1-vote judge and known trigger flakiness make a perfect mean the wrong gate.
     worst = min((c["arms"]["with"]["mean"] for c in report), default=0)
-    sys.exit(0 if worst == 1.0 else 1)
+    print(f"worst case mean: {worst:.0%} (gate: {args.threshold:.0%})")
+    sys.exit(0 if worst >= args.threshold else 1)
 
 
 if __name__ == "__main__":

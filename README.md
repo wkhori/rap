@@ -10,11 +10,34 @@ decisions that matter, tears its own plan apart before you see it, and writes a 
 npx skills add wkhori/rap
 ```
 
+Or clone and copy it in yourself:
+
+```bash
+git clone https://github.com/wkhori/rap && cp -r rap/skills/rap ~/.claude/skills/rap
+```
+
 Then, in Claude Code:
 
 ```
 /rap add magic-link auth to the Next.js app, we already use Postgres
 ```
+
+**Always invoke it as `/rap`.** The skill also lists the bare word "rap" as a trigger, but
+on a small, obviously-doable brief the model will often just write the code instead of
+planning it. The slash form is deterministic.
+
+## What it costs
+
+Measured on real runs, not estimated:
+
+| Tier | Wall clock | Cost |
+|---|---|---|
+| Quick | ~40s | ~$0.15 |
+| Standard | ~10 min | ~$2–3 |
+| Deep | longer | more — it routes the Challenger to Fable 5 at high effort |
+
+Tiers are chosen automatically, so a brief you thought was small can land on Standard. Force
+it down with `--quick` if you're watching spend.
 
 ---
 
@@ -44,7 +67,7 @@ schema boundaries — never from a time estimate.
 (the skill finds it) or *preference* (you decide). Facts are researched. Only preferences
 reach you.
 
-**One question round. Ever.** High-impact, hard-to-reverse decisions get bundled into a
+**One decision round.** High-impact, hard-to-reverse decisions get bundled into a
 single `AskUserQuestion` call — max 4, each with a recommendation and a reason. Everything
 lower-impact is defaulted and tagged `(assumed — not in brief)` so you can scan what was
 decided for you.
@@ -85,7 +108,7 @@ docs/plans/2026-08-26-magic-link-auth/
 ## You'll know it worked when
 
 - One run directory exists, with a `plan.md` containing no "TBD" and no open questions.
-- You were asked exactly one round of questions, all of them genuine preferences.
+- You were asked exactly one round of decisions, all of them genuine preferences.
 - Every phase names real files, real test cases, and a command that proves it's done.
 - A fresh session can execute the plan from the handoff prompt without asking you anything.
 

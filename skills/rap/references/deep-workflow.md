@@ -1,8 +1,8 @@
 # Deep-tier research workflow (`Workflow` runner)
 
-Use only in **Deep** tier, and only when ≥4 independent research questions deserve adversarial verification. Otherwise spawn researchers with the Agent tool. Running this skill's instructions counts as the user's opt-in for the Workflow tool.
+Use only in **Deep** tier, and only when ≥4 independent research questions deserve adversarial verification. Otherwise spawn researchers with the Agent tool. Running this skill's instructions is a listed opt-in for the Workflow tool; if the tool is unavailable in this session, spawn researchers and verifiers with `Agent` instead, under the same budget rule.
 
-**Budget rule: `Q + 2·H + 1 ≤ 8`** where Q = questions, H = high-stakes questions (each gets one verifier that judges up to 2 findings — two refutation angles, not one per finding). That leaves ≥2 of the 10-cap for the Challenger and gap pass. The script throws if the plan exceeds 8 — pair questions or lower stakes until it fits, and `log()` what you dropped.
+**Budget rule: `Q + 2·H + 1 ≤ 8`** where Q = questions, H = high-stakes questions (each gets two verifiers, one per refutation angle — that is the 2·H term; each judges up to 2 findings, so this is not one verifier per finding). That leaves ≥2 of the 10-cap for the Challenger and gap pass. The script throws if the plan exceeds 8 — pair questions or lower stakes until it fits, and `log()` what you dropped.
 
 Pass `args` as `{ brief, notesPath: "<run dir>/research.md", questions: [{ id, angle, question, stakes: "high"|"low" }] }`. The lead has already created `notesPath`.
 
