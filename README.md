@@ -1,54 +1,41 @@
-# rap — Research And Plan
+# rap
 
-A Claude Code skill that turns a brief into **one plan an agent can actually execute**.
+Research And Plan. Turns a brief into one plan file an agent can execute.
 
-It researches the codebase and primary sources, sizes the work honestly, asks you only the
-decisions that matter, tears its own plan apart before you see it, and writes a single
-`plan.md` ending in a handoff prompt.
+## Why
+
+Planning prompts fail in two directions: a one-paragraph plan for a new system, or forty
+minutes and 30k tokens spent on a two-file change. rap picks a tier from scope signals and
+enforces it with hard agent and tool-call caps, so the effort matches the job.
+
+## Install
 
 ```bash
 npx skills add wkhori/rap
 ```
 
-Or clone and copy it in yourself:
+Or copy it in directly:
 
 ```bash
 git clone https://github.com/wkhori/rap && cp -r rap/skills/rap ~/.claude/skills/rap
 ```
 
-Then, in Claude Code:
+## Usage
 
 ```
 /rap add magic-link auth to the Next.js app, we already use Postgres
+/rap docs/brief.md
+/rap <brief> --quick | --standard | --deep
 ```
 
-**Always invoke it as `/rap`.** The skill also lists the bare word "rap" as a trigger, but
-on a small, obviously-doable brief the model will often just write the code instead of
-planning it. The slash form is deterministic.
+Invoke it as `/rap`. The bare word `rap` is also a trigger but doesn't reliably fire on
+small briefs — the model tends to just write the code instead.
 
-## What it costs
+## Tiers
 
-Measured on real runs, not estimated:
-
-| Tier | Wall clock | Cost |
-|---|---|---|
-| Quick | ~40s | ~$0.15 |
-| Standard | ~10 min | ~$2–3 |
-| Deep | longer | more — it routes the Challenger to Fable 5 at high effort |
-
-Tiers are chosen automatically, so a brief you thought was small can land on Standard. Force
-it down with `--quick` if you're watching spend.
-
----
-
-## Why this exists
-
-Most planning prompts fail in one of two directions: they produce a one-paragraph plan for a
-new system, or they burn forty minutes and 30k tokens producing a mediocre plan for a
-two-file change.
-
-`rap` fixes the effort to the job with an explicit tier system, and enforces it with hard
-agent and tool-call caps.
+Chosen automatically from scope signals — files touched, subsystems crossed, new
+dependencies, schema boundaries. Never from a time estimate. The tier is stated in chat
+before any work starts.
 
 | | Quick | Standard | Deep |
 |---|---|---|---|
@@ -58,39 +45,17 @@ agent and tool-call caps.
 | Challenger | self-pass | 1 agent | 1 agent + gap pass |
 | Plan length | ~1 page | 2–4 pages | ≤8 pages |
 
-Tier is chosen from scope signals — files touched, subsystems crossed, new dependencies,
-schema boundaries — never from a time estimate.
+## How it works
 
-## What it actually does differently
-
-**Never asks you a question it can answer itself.** Every open item is split into *fact*
-(the skill finds it) or *preference* (you decide). Facts are researched. Only preferences
-reach you.
-
-**One decision round.** High-impact, hard-to-reverse decisions get bundled into a
-single `AskUserQuestion` call — max 4, each with a recommendation and a reason. Everything
-lower-impact is defaulted and tagged `(assumed — not in brief)` so you can scan what was
-decided for you.
-
-**Primary sources only.** Official docs, source, specs, changelogs. Every claim carries a URL
-and a confidence rating. Model memory of library APIs is stale, and the skill treats it that
-way — it records versions and as-of dates, and "no data found" is a valid finding rather than
-an invitation to guess.
-
-**An adversarial pass before you read it.** A Challenger agent reads the draft plan and the
-research, then reports `HOLDS` or `BLOCKER → FIX` per decision and per phase. Fixes land in
-the plan before it reaches you. Deep tier adds a gap pass that traces every requirement in
-your brief to a phase and a named test.
-
-**Plans that execute.** Real file paths, named test cases, an acceptance command per phase.
-No "TBD", no placeholders, no open questions. The last section is a handoff prompt you can
-paste into a fresh session.
-
-## See it
-
-[`examples/quick-tier-plan.md`](examples/quick-tier-plan.md) is real, unedited output from a
-one-sentence brief — 84 lines, $0.24, 101 seconds. On the same prompt with the skill
-disabled, the baseline wrote no plan at all.
+1. **Triage** — mode, size, tier, stated up front.
+2. **Research** — codebase first, then primary sources only. Every claim carries a URL or
+   `path:line` and a confidence rating. Versions and as-of dates recorded.
+3. **Decide** — open items split into *fact* (researched) and *preference* (yours). One
+   round of at most 4 questions, each with a recommendation. Everything lower-impact is
+   defaulted and tagged `(assumed — not in brief)`.
+4. **Draft** — phases with real file paths, named test cases, an acceptance command each.
+5. **Challenge** — a Challenger agent reads the draft and reports `HOLDS` or
+   `BLOCKER → FIX` per decision and phase. Fixes land before you see the plan.
 
 ## Output
 
@@ -98,32 +63,45 @@ disabled, the baseline wrote no plan at all.
 docs/plans/2026-08-26-magic-link-auth/
 ├── plan.md        # decisions, phases, tests, acceptance, handoff prompt
 ├── research.md    # findings with sources and confidence
-└── brief.md       # only if the brief came as a file or long paste
+└── brief.md       # only if the brief came as a file
 ```
 
-## Flags
+[`examples/quick-tier-plan.md`](examples/quick-tier-plan.md) is real, unedited output from a
+one-sentence brief.
 
+## Model routing
+
+| Role | Model |
+|---|---|
+| Researcher, verifier | `sonnet` |
+| Challenger — Standard | `opus` |
+| Challenger — Deep, gap pass | `fable` |
+
+Retrieval is I/O-bound, so it runs cheap. A high-stakes brief steps the Challenger up, not
+the researchers.
+
+## Cost
+
+A Quick run is about $0.15. Standard is a few dollars. Deep is more — it routes the
+Challenger to Fable 5.
+
+## Evals
+
+Five cases under `skills/rap/evals/`, in the `claude plugin eval` format, plus a local
+runner that works today:
+
+```bash
+python3 skills/rap/evals/run_local.py --case quick-* --runs 1
 ```
-/rap <brief>              # tier chosen automatically from scope
-/rap <brief> --quick      # force Quick
-/rap <brief> --standard   # force Standard
-/rap <brief> --deep       # force Deep
-/rap docs/brief.md        # a path works too
-```
 
-## You'll know it worked when
-
-- One run directory exists, with a `plan.md` containing no "TBD" and no open questions.
-- You were asked exactly one round of decisions, all of them genuine preferences.
-- Every phase names real files, real test cases, and a command that proves it's done.
-- A fresh session can execute the plan from the handoff prompt without asking you anything.
+The runner re-runs each prompt with the skill disabled and reports the delta. On
+`plan-executability` that delta is 100% vs 0% — the baseline writes no plan at all.
+`skills/rap/evals/README.md` lists what isn't covered yet.
 
 ## Requirements
 
-Claude Code. The skill calls `Agent`, `AskUserQuestion`, `WebSearch`/`WebFetch`, and
-optionally the `Workflow` runner at Deep tier, by name. That's deliberate — naming the real
-tools makes the behaviour deterministic instead of conditional. It is not portable to other
-agent harnesses as-is.
+Claude Code. The skill calls `Agent`, `AskUserQuestion`, `WebSearch`/`WebFetch` and
+optionally `Workflow` by name, so it isn't portable to other agent harnesses as-is.
 
 ## License
 
