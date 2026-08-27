@@ -1,0 +1,59 @@
+name: Feedback
+description: Tell me how a rap run went — good or bad
+title: "[feedback] "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: "Four questions, one minute. Thanks for testing."
+  - type: input
+    id: brief
+    attributes:
+      label: What did you ask it to plan?
+      description: One line is fine. Redact anything private.
+      placeholder: "add magic-link auth to our Next.js app"
+    validations:
+      required: true
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Did it pick the right tier?
+      options:
+        - "Yes — the size matched the work"
+        - "Too shallow — should have gone deeper"
+        - "Too heavy — overkill for the change"
+        - "It never told me the tier"
+    validations:
+      required: true
+  - type: dropdown
+    id: questions
+    attributes:
+      label: The questions it asked you
+      options:
+        - "Right questions, one round"
+        - "Asked me something it should have researched itself"
+        - "Should have asked more — it assumed something important"
+        - "Asked more than once"
+        - "Didn't ask anything"
+    validations:
+      required: true
+  - type: dropdown
+    id: executed
+    attributes:
+      label: Did you try executing the plan?
+      options:
+        - "Yes — it worked end to end"
+        - "Yes — it broke partway (details below)"
+        - "No, just read it"
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Where it broke, what was missing, what surprised you. Paste plan.md if you can share it.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "0.1.0"
