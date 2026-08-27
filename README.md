@@ -125,14 +125,6 @@ optionally the `Workflow` runner at Deep tier, by name. That's deliberate — na
 tools makes the behaviour deterministic instead of conditional. It is not portable to other
 agent harnesses as-is.
 
-## Feedback
-
-This is v0.1.0 and I'm actively looking for feedback — especially on whether the tier
-triage picks the right size, and whether the plans actually survive execution.
-
-**[Open a feedback issue](https://github.com/wkhori/rap/issues/new?template=feedback.yml)** —
-it's four questions and takes a minute.
-
 ## License
 
 MIT © Walid Khori
