@@ -38,14 +38,28 @@ Decide three things and state them in chat in ≤3 lines before continuing:
 | Decision questions (one round) | 1–2 | 2–4 | 3–4 |
 | Plan length | ~1 page | 2–4 pages | ≤8 pages; overflow → research.md |
 
-**Agent & model fit** — spawn with the `Agent` tool; pick by role.
+**Agent & model fit** — spawn with the `Agent` tool. Route by what the role actually
+demands, not by how important the project feels.
 
-| Role | `subagent_type` | `model` | `effort` | Use when |
+| Role | `subagent_type` | `model` | `effort` | Why this tier |
 |---|---|---|---|---|
-| Lead (you) | — | session model | — | always |
-| Researcher (fetch, read, summarize) | `general-purpose` | `sonnet` | `medium` | Standard/Deep |
-| Challenger, architecture reasoning | `general-purpose` | omit (inherit session) | `high` | Standard/Deep |
-| Verifier (refute one claim) | `general-purpose` | `sonnet` | `medium` | Deep |
+| Lead (you) | — | session model | — | inherit whatever the user chose |
+| Researcher (fetch, read, cite, summarize) | `general-purpose` | `sonnet` | `medium` | I/O-bound work — fetch a page, quote it, rate confidence. Reasoning strength buys almost nothing; volume and cost do. Drop to `low` for a single-question angle |
+| Verifier (refute one claim) | `general-purpose` | `sonnet` | `low` | One narrow question with a yes/no answer |
+| Challenger — Standard | `general-purpose` | `opus` | `high` | Adversarial reasoning over a bounded plan |
+| Challenger — Deep, gap pass | `general-purpose` | `fable` | `xhigh` | The one role where the strongest model pays for itself: long-horizon reasoning across a whole architecture, where a missed structural flaw costs more than the run |
+
+**Cost discipline.** Sonnet 5 is $2/$10 per Mtok, Opus 5 $5/$25, Fable 5 $10/$50 — Fable is
+5× Sonnet in and out. Spend it on judgment, never on retrieval. Concretely:
+
+- Never step the *researchers* up a tier because the brief is high-stakes. Step the
+  **Challenger** up instead — that is where model strength converts into caught mistakes.
+- A Quick run should not reach for `opus` or `fable` at all; if it feels like it needs to,
+  you mis-tiered — re-tier and say so.
+- `xhigh` is the sweet spot for hard agentic reasoning; reserve `max` for a Deep run whose
+  brief carries a rubric or regulated data. Use `low` freely for mechanical subagents.
+- Omit `model` whenever the session model is already right for the role — an explicit
+  downgrade of the lead is never this skill's call.
 
 Researchers need Bash to append to `research.md`, so `general-purpose` — not `Explore`, which cannot write. Send parallel agents as multiple `Agent` calls in **one** message or they run sequentially. `WebSearch`/`WebFetch` may be deferred; load them once with `ToolSearch("select:WebSearch,WebFetch")` before researching, and tell every researcher to do the same.
 
@@ -94,7 +108,7 @@ Write `plan.md` from `references/plan-template.md` — at minimum Summary, Decis
 ## 5. Challenge
 
 - **Quick** — self-pass written into `plan.md` as `## Challenge`: 3 lines of `assumption → failure scenario → fix applied`. A Quick plan without this section is incomplete.
-- **Standard / Deep** — spawn one Challenger (`references/agent-prompts.md#challenger`, `effort: high`, session model) pointed at the run dir. It answers `HOLDS` or `BLOCKER: … → FIX`. Apply fixes to `plan.md`; reconcile conflicts in favor of sourced data over opinion.
+- **Standard / Deep** — spawn one Challenger (`references/agent-prompts.md#challenger`) pointed at the run dir — `model: opus`, `effort: high` at Standard; `model: fable`, `effort: xhigh` at Deep. It answers `HOLDS` or `BLOCKER: … → FIX`. Apply fixes to `plan.md`; reconcile conflicts in favor of sourced data over opinion.
 - **Deep** — add the gap pass (`#gap-pass`): trace every requirement to a phase and a named test; patch the plan, don't report holes.
 
 ## 6. Finalize & deliver

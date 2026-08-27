@@ -2,7 +2,18 @@
 
 Every prompt below is pasted into a fresh `Agent` call. Always include: the brief verbatim, mode/size/tier, locked decisions so far, the run directory path (`<run dir>/research.md` is the notes file — the lead created it with one `## <angle>` heading per researcher), and "No preamble. No questions back. Return only what's asked."
 
-Spawn with `subagent_type: general-purpose` — researchers need Bash to append to `research.md`, which `Explore` cannot do. Researchers: `model: sonnet`, `effort: medium`. Challenger: omit `model` (inherit the session model), `effort: high`. Send parallel researchers as multiple `Agent` calls in one message.
+Spawn with `subagent_type: general-purpose` — researchers need Bash to append to `research.md`, which `Explore` cannot do. Send parallel researchers as multiple `Agent` calls in one message.
+
+Model routing (see SKILL.md for the cost rationale):
+
+| Role | `model` | `effort` |
+|---|---|---|
+| Researcher | `sonnet` | `medium` (`low` for a one-question angle) |
+| Verifier | `sonnet` | `low` |
+| Challenger — Standard | `opus` | `high` |
+| Challenger — Deep, gap pass | `fable` | `xhigh` |
+
+Never step researchers up a tier for a high-stakes brief — step the Challenger up instead.
 
 ## researcher
 
