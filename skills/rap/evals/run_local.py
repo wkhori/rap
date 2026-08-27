@@ -175,7 +175,12 @@ def grade(g, body, run, workspace, judge_model, votes):
         return bool(hits), f"matched {hits[:3] or 'nothing'} for {g['path']}"
 
     if t == "regex":
-        text = read_source(g.get("source") or g.get("target"), run, workspace)
+        spec = g.get("source") or g.get("target")
+        text = read_source(spec, run, workspace)
+        # A not_contains check over a file that was never written is vacuously true, which
+        # hands the no-skill baseline free points. Absent evidence is not a pass.
+        if isinstance(spec, dict) and not text.strip():
+            return False, f"no file matched {spec.get('path')!r} — nothing to check"
         flags = re.I if "i" in str(g.get("flags", "")) else 0
         found = re.findall(g["pattern"], text, flags)
         mode = g.get("match", "contains")

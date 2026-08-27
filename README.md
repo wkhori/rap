@@ -86,6 +86,12 @@ your brief to a phase and a named test.
 No "TBD", no placeholders, no open questions. The last section is a handoff prompt you can
 paste into a fresh session.
 
+## See it
+
+[`examples/quick-tier-plan.md`](examples/quick-tier-plan.md) is real, unedited output from a
+one-sentence brief — 84 lines, $0.24, 101 seconds. On the same prompt with the skill
+disabled, the baseline wrote no plan at all.
+
 ## Output
 
 ```
