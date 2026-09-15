@@ -7,14 +7,14 @@ license: MIT
 metadata:
   author: Walid Khori
   homepage: https://github.com/wkhori/rap
-  version: 0.1.0
+  version: 0.1.1
 ---
 
 # rap — Research And Plan
 
 Turn a brief into one plan an agent can execute end-to-end. Fit the effort to the job: a small change gets a one-page plan in minutes; a new system gets parallel research, a Challenger, and a full plan. Never the reverse — long sessions that produce mediocre plans are the failure mode this skill exists to prevent.
 
-Brief: `$ARGUMENTS`. If empty, ask exactly one intake question ("What are we building or changing — and is there a brief, rubric, or deadline I should read?") and never ask another intake question. A `--quick|--standard|--deep` flag forces the tier.
+Brief: `$ARGUMENTS`. If empty, ask exactly one intake question ("What are we building or changing — and is there a brief, rubric, or deadline I should read?") and never ask another intake question. A ticket key (Jira, Linear, GitHub issue) counts as a brief: fetch the ticket and treat its text as the brief. A `--quick|--standard|--deep` flag forces the tier.
 
 ## 1. Triage (lead, inline)
 
@@ -65,9 +65,9 @@ Every spawn is `subagent_type: general-purpose` — researchers need Bash to app
   puts researchers on whatever the lead happens to be using.
 - Prices as of Aug 2026 — re-check before trusting them.
 
-(Quick tier's lone `Explore` agent is the exception: it's read-only, so it returns findings and the lead writes `research.md` itself.) Send parallel agents as multiple `Agent` calls in **one** message or they run sequentially. `WebSearch`/`WebFetch` may be deferred; load them once with `ToolSearch("select:WebSearch,WebFetch")` before researching, and tell every researcher to do the same.
+(Quick tier's lone `Explore` agent is the exception: it's read-only, so it returns findings and the lead writes `research.md` itself.) Send parallel agents as multiple `Agent` calls in **one** message or they run sequentially. `WebSearch`/`WebFetch` may be deferred; load them with `ToolSearch("select:WebSearch,WebFetch")` only before you yourself fetch — at Standard and Deep the lead usually does no web work — and tell every researcher to load them before its first fetch.
 
-**Run directory** — check first whether a run directory for this same work already exists; if it does, do not create a second one — switch to `revision` mode over its `plan.md`. Otherwise create it now: match repo convention, default `docs/plans/YYYY-MM-DD-<slug>/`. Greenfield: create the project folder first and put the run dir inside it; never write into a non-project cwd (e.g. a Desktop). Files: `plan.md` (always), `research.md` (create with a title line only — each researcher's heredoc opens with its own `## <angle>` heading, since `>>` can only append at end-of-file), `brief.md` when the brief came as a file or a long paste; if the brief is a large document, `brief.md` holds a one-line pointer to the original rather than a copy.
+**Run directory** — check first whether a run directory for this same work already exists; if it does, do not create a second one — switch to `revision` mode over its `plan.md`. Otherwise create it now. If the repo already has a plans or specs folder under any name (`docs/plans/`, `docs/specs/`, `plans/`, `specs/`, `docs/design/` …), use it and follow its naming convention for the subfolder; fall back to `docs/plans/YYYY-MM-DD-<slug>/` only when none exists. Greenfield: create the project folder first and put the run dir inside it; never write into a non-project cwd (e.g. a Desktop). Files: `plan.md` (always), `research.md` (create with a title line only — each researcher's heredoc opens with its own `## <angle>` heading, since `>>` can only append at end-of-file), `brief.md` when the brief came as a file, a long paste, or a ticket key — for a ticket, write the fetched ticket text into `brief.md` so a handoff session without the ticket CLI can read it; if the brief is a large document, `brief.md` holds a one-line pointer to the original rather than a copy.
 
 ## 2. Research
 
@@ -79,6 +79,7 @@ Goal: facts that change a decision, not a survey. Two lenses, always:
 Rules:
 - Codebase first: files, patterns, tests, conventions the change touches. Cite `path:line`. Read code, don't guess from filenames.
 - Web: primary sources only — official docs, source, specs, changelogs, pricing pages. `WebFetch` the real page over trusting search snippets. Every claim gets a URL and a confidence (H/M/L). Never invent a URL or a number; "no data found" is a finding. Record versions and as-of dates — model memory of library APIs is stale.
+- Verify negatives: a zero-match search is only a finding after you confirm the search target exists and is installed (`ls` the path, `pnpm ls <pkg>` / `npm ls <pkg>`, the worktree's `node_modules` is populated). Otherwise report it as `Unknown`, confidence L — never "zero matches, confidence H".
 - Findings go to `research.md` as Finding · Source · Key numbers · Gotcha · Confidence. Later agents read the file, not chat.
 - **Revision mode**: research = read the existing design doc and the code it describes; write a `## Drift` table (doc says · code does · keep / reopen) into `plan.md`. Only reopened decisions enter the decision frontier; the rest are listed `KEPT`. The old doc gets a one-line pointer to the run dir — never a rewrite.
 
@@ -87,7 +88,7 @@ Delegation by tier:
 - **Standard** — spawn researchers in parallel, one per angle the brief needs (codebase; primary-source web; plus at most two of domain/design/data/infra), prompt `references/agent-prompts.md#researcher`. Each appends under its own heading in `research.md` with a single Bash heredoc (`cat >> research.md <<'EOF'`) — never read-then-write the shared file — and returns a ≤300-word summary.
 - **Deep** — as Standard. When ≥4 independent research questions need adversarial verification, use the `Workflow` runner (`references/deep-workflow.md`); otherwise parallel researcher + verifier agents. Budget rule either way: `questions + 2·high-stakes + 1 ≤ 8` agents.
 
-Budget: lead inline research ≤15 tool calls (Quick) / ≤25 (Standard, Deep); every researcher ≤20 tool calls, then returns what it has. Research **ends** when every frontier question has a recommendation. Anything still unverified becomes an `Unknown` line in `research.md` with what we'll do about it — never another research pass.
+Budget: lead inline research ≤15 tool calls (Quick) / ≤25 (Standard, Deep). Every researcher targets 20 tool calls and has a hard stop at 30: at call 30 it stops, appends what it has, and returns — no exceptions. Research **ends** when every frontier question has a recommendation. Anything still unverified becomes an `Unknown` line in `research.md` with what we'll do about it — never another research pass.
 
 ## 3. Decide
 
@@ -96,7 +97,7 @@ Split every open item into **fact** (you find it) or **preference** (user decide
 - Low-impact or easily reversible → choose a sensible default and tag it `(assumed — not in brief)`.
 - High-impact or hard to reverse (data store, auth, hosting, core UX model, scope cuts, which innovations to keep, anything a rubric scores) → **decision frontier**. For Standard/Deep architectural choices, consider ≥2 structurally distinct options before recommending.
 
-Ask the frontier in **one** `AskUserQuestion` call — count per the tier table (max 4 questions, which is also the tool's cap). If the frontier exceeds 4, the extras are by definition lower-impact — default and tag them. Each question gets 2–4 options, the recommended one first and labelled `(Recommended)`, and a `description` giving one sentence of *why*. At least one question should come from the unknown-unknowns pass. If the frontier is empty, say "no decisions needed; N assumptions" and continue. If the brief says autonomous / no questions, or the user says "just decide", skip the round, take every recommendation, annotate.
+Ask the frontier in **one** `AskUserQuestion` call — count per the tier table (max 4 questions, which is also the tool's cap). If the frontier exceeds 4, the extras are by definition lower-impact — default and tag them. Each question gets 2–4 options. Labels are ≤6 words including `(Recommended)` on the first, recommended option; the one-sentence *why* goes in that option's `description`, never in the label — the tool renders labels as narrow chips and truncates anything longer. At least one question should come from the unknown-unknowns pass. If the frontier is empty, say "no decisions needed; N assumptions" and continue. If the brief says autonomous / no questions, or the user says "just decide", skip the round, take every recommendation, annotate.
 
 Lock every decision as `LOCKED: X — because Y. Rejected: A (why), B (why).`
 
@@ -113,11 +114,13 @@ Write `plan.md` from `references/plan-template.md` — at minimum Summary, Decis
 
 - **Quick** — self-pass written into `plan.md` as `## Challenge`: 3 lines of `assumption → failure scenario → fix applied`. A Quick plan without this section is incomplete.
 - **Standard / Deep** — spawn one Challenger (`references/agent-prompts.md#challenger`) pointed at the run dir — `model: opus` at Standard, `model: fable` at Deep. It answers `HOLDS` or `BLOCKER: … → FIX`. Apply fixes to `plan.md`; reconcile conflicts in favor of sourced data over opinion.
+  - **Budget and boundary.** The Challenger gets ≤15 tool calls and is read-only. Every FIX is an edit to `plan.md` that the lead applies — never a ticket comment, a PR, a commit, or any write outside the run dir. A fix that amounts to "tell an external system something" is out of scope: turn it into a phase step for the implementer if the plan needs it, otherwise drop it.
+  - **Overturning a lock.** A Challenger may replace a `LOCKED` decision when its fix is sourced (`research.md` or a `path:line` / URL it cites). Re-tag the decision `LOCKED: <new X> — because <Y>. Revised by Challenger from: <old X> (<why it failed>).` and list every revised lock in the chat summary. Re-ask the user only if the revision changes scope, cost, or a preference the user stated in the question round — otherwise no second question round.
 - **Deep** — add the gap pass (`#gap-pass`): trace every requirement to a phase and a named test; patch the plan, don't report holes.
 
 ## 6. Finalize & deliver
 
-Append the **Handoff prompt** (`references/agent-prompts.md#handoff`) to `plan.md`. In chat, ≤150 words: tier, run directory, 3–5 key decisions in plain language, assumptions count, the single biggest risk. Then: "Start Phase 1 here, or hand off?" — for Deep, recommend handing off to a fresh session (this one's context is already large). Do not implement unless told to.
+Append the **Handoff prompt** (`references/agent-prompts.md#handoff`) to `plan.md`. In chat, ≤150 words: tier, run directory, 3–5 key decisions in plain language, any locks the Challenger revised, assumptions count, the single biggest risk. Then: "Start Phase 1 here, or hand off?" — for Deep, recommend handing off to a fresh session (this one's context is already large). Do not implement unless told to.
 
 ## Example run
 
@@ -145,7 +148,7 @@ Output: `plan.md` — 4 phases (schema → send/verify path → rate limit + rep
 
 ## Guardrails
 
-- Agent caps (2/5/10) include researchers, Challenger, verifiers, and every `Workflow`-spawned agent. Wanting more means you mis-tiered — re-scope, don't spawn. Tool-call budgets are stop lines, not targets.
+- Agent caps (2/5/10) include researchers, Challenger, verifiers, and every `Workflow`-spawned agent. Wanting more means you mis-tiered — re-scope, don't spawn. Hard stops (agent caps, the lead's inline budget, the researcher's 30-call stop, the Challenger's 15) are stop lines, not targets.
 - One question round. One run directory. Everything else is chat.
 - Every subagent prompt carries the brief verbatim, the locked decisions, the run directory path, and "no preamble, no questions back" — agents start cold.
 - Don't re-run research a supplied document already settled; revise an existing plan, don't rewrite it.

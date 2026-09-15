@@ -63,8 +63,11 @@ before any work starts.
 docs/plans/2026-08-26-magic-link-auth/
 ├── plan.md        # decisions, phases, tests, acceptance, handoff prompt
 ├── research.md    # findings with sources and confidence
-└── brief.md       # only if the brief came as a file
+└── brief.md       # only if the brief came as a file, long paste, or ticket key
 ```
+
+The run directory goes in the repo's existing plans or specs folder when it has one
+(`docs/specs/`, `plans/`, …); `docs/plans/` is only the fallback.
 
 [`examples/quick-tier-plan.md`](examples/quick-tier-plan.md) is real, unedited output from a
 one-sentence brief.

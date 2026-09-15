@@ -1,6 +1,6 @@
 # Plan template
 
-Written as `plan.md` inside the run directory (`docs/plans/YYYY-MM-DD-<slug>/`, or the repo's own convention) alongside `research.md` and optional `brief.md`. Keep every section that earns its place for the tier; delete the rest.
+Written as `plan.md` inside the run directory (the repo's existing plans or specs folder if it has one — e.g. `docs/specs/YYYY-MM-DD-<slug>/` — else `docs/plans/YYYY-MM-DD-<slug>/`) alongside `research.md` and optional `brief.md`. Keep every section that earns its place for the tier; delete the rest.
 
 Tier guidance — **Quick**: Summary, Brief, Assumptions, Decisions, Setup & commands, Phases, Challenge, Handoff. **Standard** adds Research, Risks, Requirements trace, Non-goals. **Deep** keeps everything, ≤ ~8 pages; overflow goes to `research.md`. **Revision** mode adds Drift.
 
@@ -8,7 +8,7 @@ Tier guidance — **Quick**: Summary, Brief, Assumptions, Decisions, Setup & com
 # <Feature / Project name>
 
 **Mode:** greenfield | feature | revision · **Size:** S/M/L/XL · **Tier:** Quick | Standard | Deep
-**Research:** `./research.md` (omit if none) · **Brief:** `./brief.md` (if supplied as a file)
+**Research:** `./research.md` (omit if none) · **Brief:** `./brief.md` (if supplied as a file, long paste, or ticket)
 
 ## Summary
 3–4 sentences: what we're building, the approach, why this approach over the obvious alternative.
@@ -29,6 +29,7 @@ Separate **Found** (evidence) from **Inferred** (reasoning) from **Unknown** (co
 
 ## Decisions
 `LOCKED: <decision> — because <reason>. Rejected: <alt A> (<why>), <alt B> (<why>).`
+A lock the Challenger overturned with a sourced fix: `LOCKED: <new decision> — because <reason>. Revised by Challenger from: <old decision> (<why it failed>).`
 Standard/Deep add per decision: Confidence H/M/L · Reversibility easy/hard. Mark which came from the user's answers vs. recommended defaults.
 
 ## Setup & commands
