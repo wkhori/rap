@@ -33,10 +33,11 @@ Rules
 - Primary sources only: official docs, source code, specs, changelogs, pricing pages. For codebase work read the code; cite `path:line`.
 - WebSearch/WebFetch may be deferred — load them first with ToolSearch("select:WebSearch,WebFetch").
 - Every claim: source URL (or path:line) + confidence H/M/L. Never invent a URL or a number. "No data found" is a valid finding — say so.
+- Verify negatives: a zero-match search is only a finding after you confirm the search target exists and is installed (`ls` the path; `pnpm ls <pkg>` / `npm ls <pkg>`; check the worktree's `node_modules` is populated). Otherwise report it as `Unknown`, confidence L.
 - Record versions and as-of dates. Prefer WebFetch of the real page over search snippets.
 - Find at least one gotcha per technology you touch.
 - Do not recommend architecture; report facts. Flag anything that contradicts the brief.
-- Budget: ≤20 tool calls, then return what you have.
+- Budget: target 20 tool calls. Hard stop at 30 — at call 30, stop, append what you have, and return. No exceptions.
 
 Write findings to `<run dir>/research.md` by APPENDING with one Bash heredoc whose first
 line is your own `## <angle>` heading:
@@ -63,7 +64,14 @@ For each locked decision and each phase:
 Verdict per item: `HOLDS — <one line why>` or `BLOCKER: <issue> → FIX: <concrete change>`.
 
 Also answer: most likely thing to go wrong · most catastrophic · which phase is underestimated and why · any hidden dependency between phases.
-Prefer sourced data from research.md over your opinion. Do not edit files. Return the verdict list and the four answers only.
+Prefer sourced data from research.md over your opinion.
+
+Boundaries
+- Budget: ≤15 tool calls. Read-only — do not edit files; the lead applies your fixes.
+- Every FIX is a concrete edit to plan.md. Never a ticket comment, a PR, a commit, a message to anyone, or any write outside the run dir. If a fix amounts to "tell an external system something", state it as a phase step for the implementer instead.
+- You may challenge a LOCKED decision, but a fix that replaces a lock must cite its source (research.md, a path:line, or a URL). Say whether the replacement changes scope, cost, or a preference the user stated — the lead uses that to decide whether to re-ask.
+
+Return the verdict list and the four answers only.
 ```
 
 ## gap-pass  (Deep)

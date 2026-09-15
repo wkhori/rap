@@ -45,7 +45,7 @@ const VERDICTS = {
     properties: { claim: { type: 'string' }, refuted: { type: 'boolean' }, reason: { type: 'string' }, correction: { type: 'string' } } } } },
 }
 
-const rules = `Primary sources only (official docs, source, specs, changelogs). WebSearch/WebFetch may be deferred — load via ToolSearch("select:WebSearch,WebFetch"). Every claim: URL or path:line + confidence H/M/L. Never invent a URL or number; "no data found" is a valid finding. Record versions/as-of dates. Budget ≤20 tool calls. No preamble, no questions back.`
+const rules = `Primary sources only (official docs, source, specs, changelogs). WebSearch/WebFetch may be deferred — load via ToolSearch("select:WebSearch,WebFetch"). Every claim: URL or path:line + confidence H/M/L. Never invent a URL or number; "no data found" is a valid finding. A zero-match search is a finding only after you confirm the target exists and is installed (ls, pnpm ls <pkg>); otherwise report Unknown, confidence L. Record versions/as-of dates. Budget: target 20 tool calls, hard stop at 30 — stop and return what you have. No preamble, no questions back.`
 
 const results = await pipeline(
   questions,
